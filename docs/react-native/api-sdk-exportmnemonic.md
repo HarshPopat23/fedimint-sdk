@@ -17,7 +17,7 @@ Gives the seed phrase object of the wallet. Synchronous.
 
 **Returns.** `MnemonicLike`. The seed phrase object. Call `words()` on it to read the `words`.
 
-**Throws.** None. The method is infallible. After SdkSession.close() the object is destroyed, so export first.
+**Throws.** `MnemonicRequired` if the session has no seed. Export before closing the session.
 
 **Example**
 {#example}
@@ -27,8 +27,10 @@ import type { SdkLike } from '@fedimint/react-native'
 
 declare const sdk: SdkLike
 
-const mnemonic = sdk.exportMnemonic() // [!code focus]
-console.log(mnemonic.words().length)
+if (sdk.hasMnemonic()) {
+  const mnemonic = sdk.exportMnemonic() // [!code focus]
+  console.log(mnemonic.words().length)
+}
 ```
 
 **Used in.** [Seed words, step 02](./seed-words.md#step-02), [Restore, step 02](./restore.md#step-02), [Installation, step 06](./installation.md#step-06)

@@ -45,9 +45,11 @@ import { openSdk, Exception } from '@fedimint/react-native'
 import RNFS from 'react-native-fs'
 
 const dataDir = `${RNFS.DocumentDirectoryPath}/fedimint`
-const { sdk, InviteCode, close } = await openSdk({ dataDir })
+const { sdk, InviteCode, Mnemonic, close } = await openSdk({ dataDir })
 
 try {
+  // After the user chooses to create a wallet:
+  if (!sdk.hasMnemonic()) await sdk.setMnemonic(Mnemonic.generate())
   const federation = await sdk.join(InviteCode.parse(inviteCode))
   // ... use `federation` and the rest of the generated API.
 } catch (error) {
@@ -61,12 +63,12 @@ try {
 }
 ```
 
-To look for an existing wallet at startup, call
-`openSdk({ dataDir, createIfMissing: false })` and check the exception code for
-`ErrorCode.WalletNotFound`. In that case, offer Create or Restore. Use the
-default open mode once the user chooses, passing their mnemonic for Restore.
-The existing-only attempt may create storage files, but leaves an empty store
-without a seed.
+Opening with `openSdk({ dataDir })` loads an existing seed or leaves empty
+storage seedless. Use `sdk.hasMnemonic()` to decide whether to show wallet setup.
+Discovery, preview, and invite parsing also work before setup. When the user
+chooses Create or Restore, use `Mnemonic.generate()` or `Mnemonic.fromWords(words)`
+from the session, then call `sdk.setMnemonic(mnemonic)`. Await the setter before
+joining or recovering a federation. A different mnemonic cannot replace a stored seed.
 
 Pass what the user pastes or scans to the SDK as it is. `InviteCode.parse`, `Notes.parse` and the
 string-typed values (a `Bolt11Invoice`, an `Address`) ignore whitespace around the text. A

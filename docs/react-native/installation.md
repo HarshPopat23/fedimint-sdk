@@ -177,7 +177,7 @@ This screen is a probe. It opens the SDK and asks how many seed words it holds. 
 Four things here will surprise you if you are coming from an ordinary library:
 
 1. `openSdk` takes a `dataDir`, because the SDK owns a database on disk. Your app chooses where it lives. Give a plain path, not a `file://` URI. `RNFS.DocumentDirectoryPath` is already a plain path.
-2. The first open of an empty folder creates a seed and stores it. Every later open reads the same seed back. You never generate one yourself.
+2. An empty folder opens without a seed. This example explicitly creates one. Later opens read the stored seed.
 3. The probe counts the words and never shows them. Seed words are shown only to their owner, on a screen they asked for. [Seed words](./seed-words.md) has that screen.
 4. `session.close()` is required. It gives the folder back. Until then, a second open of the same folder fails with `StorageInUse`. So a remount waits for the last close before it opens.
 
@@ -209,9 +209,12 @@ export default function FedimintDebug() {
 
     const opening = closing.then(() => openSdk({ dataDir }))
     opening
-      .then((opened) => {
+      .then(async (opened) => {
         if (cancelled) return
         // Count the words. Never put them on a debug screen, and never log them.
+        if (!opened.sdk.hasMnemonic()) {
+          await opened.sdk.setMnemonic(opened.Mnemonic.generate())
+        }
         const count = opened.sdk.exportMnemonic().words().length
         setStatus(`the rust core answered: a ${count} word seed is stored`)
       })

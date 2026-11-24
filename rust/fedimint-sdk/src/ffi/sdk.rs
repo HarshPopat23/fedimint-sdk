@@ -12,8 +12,7 @@ use crate::{
 /// of an origin-scoped store (1 to 64 characters of letters, digits, `-`, `_` or `.`).
 ///
 /// Pass a `mnemonic` ([`Mnemonic::from_words`] / [`Mnemonic::generate`]) to establish that seed.
-/// Pass `None` to use the seed the storage already holds, or, over storage proven empty, to
-/// generate and persist a fresh one. The failure modes are exactly those of
+/// Pass `None` to use the stored seed or open a seedless session over empty storage. The failure modes are exactly those of
 /// [`SdkBuilder::build`](crate::SdkBuilder::build).
 ///
 /// The flattened form of [`SdkBuilder`](crate::SdkBuilder), which cannot itself cross the FFI: a
@@ -23,27 +22,6 @@ use crate::{
 pub async fn create_fedimint_sdk(
     data_dir: String,
     mnemonic: Option<Arc<Mnemonic>>,
-) -> Result<Arc<Sdk>> {
-    open_sdk(data_dir, mnemonic, true).await
-}
-
-/// Opens an existing wallet without initializing empty storage.
-///
-/// Returns [`WalletNotFound`](crate::ErrorCode::WalletNotFound) if the location is empty.
-/// Other storage errors follow the same rules as [`create_fedimint_sdk`].
-#[cfg_attr(not(target_family = "wasm"), uniffi::export(async_runtime = "tokio"))]
-#[cfg_attr(target_family = "wasm", uniffi::export)]
-pub async fn open_existing_fedimint_sdk(
-    data_dir: String,
-    mnemonic: Option<Arc<Mnemonic>>,
-) -> Result<Arc<Sdk>> {
-    open_sdk(data_dir, mnemonic, false).await
-}
-
-async fn open_sdk(
-    data_dir: String,
-    mnemonic: Option<Arc<Mnemonic>>,
-    create_if_missing: bool,
 ) -> Result<Arc<Sdk>> {
     // A Kotlin host has no way to install a Rust log subscriber, or to hand the SDK the `Context`
     // its DNS resolver needs, so on Android the SDK does both itself, here: the first call a host
@@ -64,9 +42,7 @@ async fn open_sdk(
     let storage = Storage::at(&data_dir)?;
     #[cfg(target_family = "wasm")]
     let storage = Storage::in_browser(&data_dir)?;
-    let mut builder = Sdk::builder()
-        .storage(storage)
-        .create_if_missing(create_if_missing);
+    let mut builder = Sdk::builder().storage(storage);
     if let Some(mnemonic) = mnemonic {
         // `Mnemonic` crosses as an opaque object, so the binding hands over an `Arc`; the builder
         // wants it by value and `Mnemonic` is a cheap clone.

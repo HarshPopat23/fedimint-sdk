@@ -131,8 +131,10 @@ export async function openRestored(
 Every later launch opens the folder without `mnemonic`, exactly as in [Seed words](./seed-words.md).
 
 ::: warning
-**Offer restore before the app opens the folder for the first time.** The first open of an empty folder creates a new seed, and after that the folder takes only that seed: other words fail with `SeedMismatch`. In the same run, an open also fails with `StorageInUse` while any federation, operation or subscription from the first session is still alive. A screen that unmounts does not free its objects at once, so [`close()`](./api-session-close.md) alone is not enough.
-:::
+**Restore can start from a seedless session.** Opening empty storage leaves it seedless. If you
+already have a seedless session open, call `await sdk.setMnemonic(Mnemonic.fromWords(words))` on
+that session. The example above supplies the mnemonic explicitly at open. Both paths refuse
+to replace a different seed already in storage.
 
 ::: tip Check
 Open with the words, then call `session.sdk.exportMnemonic().words()`. You will see the same words, in the same order. Open with one word changed and you will see the `InvalidInput` message.

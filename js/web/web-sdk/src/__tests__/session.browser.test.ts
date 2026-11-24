@@ -1,5 +1,10 @@
 import { describe, expect } from 'vitest'
-import { ErrorCode, FederationStatus_Tags, openSdk } from '@fedimint/web-sdk'
+import {
+  DiscoverySource,
+  ErrorCode,
+  FederationStatus_Tags,
+  openSdk,
+} from '@fedimint/web-sdk'
 import { fund, sdkTest, uniqueStorage, withSession } from './fixtures'
 
 // What crosses the worker boundary before anything is joined: opening and closing, the storage
@@ -117,6 +122,47 @@ describe('session', () => {
 })
 
 describe('seed', () => {
+  sdkTest(
+    'initializes a seedless session without reopening the worker',
+    async () => {
+      const storage = uniqueStorage('seedless')
+      const session = await openSdk({ storage })
+      const words = await (async () => {
+        try {
+          expect(await session.sdk.hasMnemonic()).toBe(false)
+          const [federation] = await session.sdk.discoverFederations(
+            new DiscoverySource.Dev(),
+          )
+          const invite = await session.InviteCode.parse(
+            await federation.invite.display(),
+          )
+          expect(await invite.federationId()).toBe(federation.id)
+          await expect(session.sdk.exportMnemonic()).rejects.toMatchObject({
+            code: ErrorCode.MnemonicRequired,
+          })
+          const chosen = await session.Mnemonic.generate()
+          const words = await chosen.words()
+          await session.sdk.setMnemonic(await session.Mnemonic.fromWords(words))
+          expect(await session.sdk.hasMnemonic()).toBe(true)
+          await expect(
+            session.sdk.setMnemonic(await session.Mnemonic.generate()),
+          ).rejects.toMatchObject({ code: ErrorCode.SeedMismatch })
+          return words
+        } finally {
+          await session.close()
+        }
+      })()
+      const reopened = await openSdk({ storage })
+      try {
+        expect(await (await reopened.sdk.exportMnemonic()).words()).toEqual(
+          words,
+        )
+      } finally {
+        await reopened.close()
+      }
+    },
+  )
+
   sdkTest(
     'exports a 12 word mnemonic that a new storage can start from',
     async ({ session }) => {

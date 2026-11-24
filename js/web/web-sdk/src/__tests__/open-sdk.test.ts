@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { SdkError } from '../errors'
-import { ErrorCode, openSdk } from '../index'
+import { openSdk } from '../index'
 import { REF_KEY } from '../protocol'
 import { FakeWorker } from './fake-worker'
 
@@ -21,52 +21,16 @@ function shutdowns(worker: FakeWorker): number[] {
 }
 
 describe('openSdk', () => {
-  it.each([undefined, true])(
-    'opens or creates when createIfMissing is %s',
-    async (createIfMissing) => {
-      const worker = new FakeWorker()
-      const opening = openSdk({
-        storage: 'store',
-        ...(createIfMissing === undefined ? {} : { createIfMissing }),
-        createWorker: () => worker,
-      })
-      expect(worker.sent).toEqual([
-        expect.objectContaining({ kind: 'static', fn: 'createFedimintSdk' }),
-      ])
-      worker.reply({ kind: 'ok', id: 1, value: { [REF_KEY]: 1, type: 'Sdk' } })
-      await opening
-    },
-  )
-
-  it('refuses a missing wallet without falling back to creation', async () => {
+  it('opens a session without asking the worker to generate a seed', async () => {
     const worker = new FakeWorker()
-    const opening = openSdk({
-      storage: 'store',
-      createIfMissing: false,
-      createWorker: () => worker,
-    })
+    await open(worker)
     expect(worker.sent).toEqual([
       expect.objectContaining({
         kind: 'static',
-        fn: 'openExistingFedimintSdk',
+        fn: 'createFedimintSdk',
         args: ['store', undefined],
       }),
     ])
-    worker.reply({
-      kind: 'err',
-      id: 1,
-      error: {
-        sdk: true,
-        code: ErrorCode.WalletNotFound,
-        reason: 'no wallet exists',
-      },
-    })
-    await expect(opening).rejects.toMatchObject({
-      name: 'SdkError',
-      code: ErrorCode.WalletNotFound,
-    })
-    expect(worker.terminated).toBe(true)
-    expect(worker.sent).toHaveLength(1)
   })
 
   it('makes a later close wait for the first rather than resolving early', async () => {

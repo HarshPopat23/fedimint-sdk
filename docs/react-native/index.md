@@ -15,6 +15,10 @@ cd ios && pod install
 
 ```tsx no-check [App.tsx]
 const session = await openSdk({ dataDir })
+// After the user chooses Create:
+if (!session.sdk.hasMnemonic()) {
+  await session.sdk.setMnemonic(session.Mnemonic.generate())
+}
 const fed = await session.sdk.join(InviteCode.parse(code))
 const msat = useBalance(fed)
 return <Text>{`${msat / 1000n} sats`}</Text>

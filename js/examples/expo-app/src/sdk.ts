@@ -43,7 +43,16 @@ export function open(mnemonic?: string[]): Promise<SdkSession> {
   if (session) return Promise.resolve(session)
   if (!opening) {
     opening = openSdk({ dataDir, mnemonic }).then(
-      (opened) => {
+      async (opened) => {
+        try {
+          if (!opened.sdk.hasMnemonic()) {
+            await opened.sdk.setMnemonic(opened.Mnemonic.generate())
+          }
+        } catch (error) {
+          opening = undefined
+          await opened.close()
+          throw error
+        }
         session = opened
         notify()
         return opened

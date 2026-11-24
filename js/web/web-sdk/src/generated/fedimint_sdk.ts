@@ -53,8 +53,7 @@ const uniffiIsDebug =
  * of an origin-scoped store (1 to 64 characters of letters, digits, `-`, `_` or `.`).
  *
  * Pass a `mnemonic` ([`Mnemonic::from_words`] / [`Mnemonic::generate`]) to establish that seed.
- * Pass `None` to use the seed the storage already holds, or, over storage proven empty, to
- * generate and persist a fresh one. The failure modes are exactly those of
+ * Pass `None` to use the stored seed or open a seedless session over empty storage. The failure modes are exactly those of
  * [`SdkBuilder::build`](crate::SdkBuilder::build).
  *
  * The flattened form of [`SdkBuilder`](crate::SdkBuilder), which cannot itself cross the FFI: a
@@ -111,46 +110,6 @@ export function defaultDiscoveryRelays(): Array<string> {
   } finally {
     nativeModule().rustbuffer_free(__rb)
   }
-}
-
-/**
- * Opens an existing wallet without initializing empty storage.
- *
- * Returns [`WalletNotFound`](crate::ErrorCode::WalletNotFound) if the location is empty.
- * Other storage errors follow the same rules as [`create_fedimint_sdk`].
- */
-export async function openExistingFedimintSdk(
-  dataDir: string,
-  mnemonic: MnemonicLike | undefined,
-  asyncOpts_?: { signal: AbortSignal },
-): Promise<SdkLike> /*throws*/ {
-  return await uniffiRustCallAsync(
-    /*rustCaller:*/ uniffiCaller,
-    /*rustFutureFunc:*/ () => {
-      return nativeModule().uniffi_fedimint_sdk_fn_func_open_existing_fedimint_sdk(
-        FfiConverterString.lower(dataDir, nativeModule().rustbuffer_alloc),
-        FfiConverterOptionalTypeMnemonic.lower(
-          mnemonic,
-          nativeModule().rustbuffer_alloc,
-        ),
-      )
-    },
-    /*pollFunc:*/ nativeModule().ffi_fedimint_sdk_rust_future_poll_u64,
-    /*cancelFunc:*/ nativeModule().ffi_fedimint_sdk_rust_future_cancel_u64,
-    /*completeFunc:*/ nativeModule().ffi_fedimint_sdk_rust_future_complete_u64,
-    /*freeFunc:*/ nativeModule().ffi_fedimint_sdk_rust_future_free_u64,
-    // Async returns always go through the JS-side converter: the
-    // FFI symbol returns the future handle (u64), and the user-level
-    // RustBuffer comes back via the shared `rust_future_complete_*`
-    // export. The bytes the runtime hands back must be deserialized
-    // here using the per-callable return-type converter.
-    /*liftFunc:*/ FfiConverterTypeSdk.lift.bind(FfiConverterTypeSdk),
-    /*liftString:*/ FfiConverterString.lift.bind(FfiConverterString),
-    /*asyncOpts:*/ asyncOpts_,
-    /*errorHandler:*/ FfiConverterTypeError__as_error.lift.bind(
-      FfiConverterTypeError__as_error,
-    ),
-  )
 }
 
 const stringConverter = (() => {
@@ -1284,8 +1243,7 @@ export enum ErrorCode {
    * The platform's secure random source was unavailable or failed, so no
    * entropy could be drawn, as when
    * [`Mnemonic::generate`](crate::Mnemonic::generate) creates a fresh seed,
-   * directly or through [`SdkBuilder::build`](crate::SdkBuilder::build)
-   * establishing one for empty storage.
+   * before the caller initializes an empty wallet.
    *
    * This is the one failure a caller can do nothing about: there is no
    * input to correct, no permission to grant, and no retry that reliably
@@ -1321,12 +1279,9 @@ export enum ErrorCode {
    */
   Internal,
   /**
-   * Storage is empty and the caller asked to open an existing wallet.
-   *
-   * The SDK did not establish a seed. The caller can let the user choose
-   * whether to create a new wallet or restore one with a mnemonic.
+   * This operation requires a mnemonic, and the session has no seed yet.
    */
-  WalletNotFound,
+  MnemonicRequired,
 }
 
 const FfiConverterTypeErrorCode = (() => {
@@ -1381,7 +1336,7 @@ const FfiConverterTypeErrorCode = (() => {
         case 23:
           return ErrorCode.Internal
         case 24:
-          return ErrorCode.WalletNotFound
+          return ErrorCode.MnemonicRequired
         default:
           throw new UniffiInternalError.UnexpectedEnumCase()
       }
@@ -1434,7 +1389,7 @@ const FfiConverterTypeErrorCode = (() => {
           return c.writeI32(22)
         case ErrorCode.Internal:
           return c.writeI32(23)
-        case ErrorCode.WalletNotFound:
+        case ErrorCode.MnemonicRequired:
           return c.writeI32(24)
       }
     }
@@ -15876,14 +15831,10 @@ export interface SdkLike {
    * step is the application's responsibility, as documented on that
    * type.
    *
-   * Infallible and synchronous: the seed is loaded once when the
-   * instance is built and held in memory for its lifetime, so this does
-   * not read storage and remains available after [`Sdk::shutdown`]. It
-   * is also why [`SdkBuilder::build`] never fails over a federation: an
-   * instance whose every federation is quarantined still exports its
-   * seed, the user's route to their money by any other client.
+   * Returns [`MnemonicRequired`](crate::ErrorCode::MnemonicRequired) before wallet setup.
+   * The seed is held in memory and remains available after [`Sdk::shutdown`].
    */
-  exportMnemonic(): MnemonicLike
+  exportMnemonic() /*throws*/ : MnemonicLike
   /**
    * See [`Sdk::federation`].
    */
@@ -16049,6 +16000,10 @@ export interface SdkLike {
     asyncOpts_?: { signal: AbortSignal },
   ) /*throws*/ : Promise<void>
   /**
+   * Whether this session has a stored mnemonic.
+   */
+  hasMnemonic(): boolean
+  /**
    * Joins the federation named by `invite`, persists it, and returns a
    * handle to it.
    *
@@ -16135,6 +16090,7 @@ export interface SdkLike {
    *
    * # Errors
    *
+   * [`MnemonicRequired`](crate::ErrorCode::MnemonicRequired) before wallet setup.
    * [`AlreadyJoined`](crate::ErrorCode::AlreadyJoined) when this
    * instance already holds the federation, including closed or
    * quarantined, where [`Sdk::reopen_federation`] rather than a second
@@ -16255,6 +16211,16 @@ export interface SdkLike {
     id: FederationId,
     asyncOpts_?: { signal: AbortSignal },
   ) /*throws*/ : Promise<RecoveryHandle>
+  /**
+   * Initializes empty storage with a generated or restored mnemonic.
+   *
+   * Repeating the same mnemonic succeeds without writing again. A different
+   * mnemonic is refused with [`SeedMismatch`](crate::ErrorCode::SeedMismatch).
+   */
+  setMnemonic(
+    mnemonic: MnemonicLike,
+    asyncOpts_?: { signal: AbortSignal },
+  ) /*throws*/ : Promise<void>
   /**
    * Best-effort: flushes everything to storage and stops all background
    * work.
@@ -16659,16 +16625,15 @@ export class Sdk extends UniffiAbstractObject implements SdkLike {
    * step is the application's responsibility, as documented on that
    * type.
    *
-   * Infallible and synchronous: the seed is loaded once when the
-   * instance is built and held in memory for its lifetime, so this does
-   * not read storage and remains available after [`Sdk::shutdown`]. It
-   * is also why [`SdkBuilder::build`] never fails over a federation: an
-   * instance whose every federation is quarantined still exports its
-   * seed, the user's route to their money by any other client.
+   * Returns [`MnemonicRequired`](crate::ErrorCode::MnemonicRequired) before wallet setup.
+   * The seed is held in memory and remains available after [`Sdk::shutdown`].
    */
-  exportMnemonic(): MnemonicLike {
+  exportMnemonic(): MnemonicLike /*throws*/ {
     return FfiConverterTypeMnemonic.lift(
-      uniffiCaller.rustCall(
+      uniffiCaller.rustCallWithError(
+        /*liftError:*/ FfiConverterTypeError__as_error.lift.bind(
+          FfiConverterTypeError__as_error,
+        ),
         /*caller:*/ (callStatus) => {
           return nativeModule().uniffi_fedimint_sdk_fn_method_sdk_export_mnemonic(
             uniffiTypeSdkObjectFactory.clonePointer(this),
@@ -16945,6 +16910,23 @@ export class Sdk extends UniffiAbstractObject implements SdkLike {
   }
 
   /**
+   * Whether this session has a stored mnemonic.
+   */
+  hasMnemonic(): boolean {
+    return FfiConverterBool.lift(
+      uniffiCaller.rustCall(
+        /*caller:*/ (callStatus) => {
+          return nativeModule().uniffi_fedimint_sdk_fn_method_sdk_has_mnemonic(
+            uniffiTypeSdkObjectFactory.clonePointer(this),
+            callStatus,
+          )
+        },
+        /*liftString:*/ FfiConverterString.lift.bind(FfiConverterString),
+      ),
+    )
+  }
+
+  /**
    * Joins the federation named by `invite`, persists it, and returns a
    * handle to it.
    *
@@ -17031,6 +17013,7 @@ export class Sdk extends UniffiAbstractObject implements SdkLike {
    *
    * # Errors
    *
+   * [`MnemonicRequired`](crate::ErrorCode::MnemonicRequired) before wallet setup.
    * [`AlreadyJoined`](crate::ErrorCode::AlreadyJoined) when this
    * instance already holds the federation, including closed or
    * quarantined, where [`Sdk::reopen_federation`] rather than a second
@@ -17375,6 +17358,41 @@ export class Sdk extends UniffiAbstractObject implements SdkLike {
           nativeModule().rustbuffer_free(__rb)
         }
       },
+      /*liftString:*/ FfiConverterString.lift.bind(FfiConverterString),
+      /*asyncOpts:*/ asyncOpts_,
+      /*errorHandler:*/ FfiConverterTypeError__as_error.lift.bind(
+        FfiConverterTypeError__as_error,
+      ),
+    )
+  }
+
+  /**
+   * Initializes empty storage with a generated or restored mnemonic.
+   *
+   * Repeating the same mnemonic succeeds without writing again. A different
+   * mnemonic is refused with [`SeedMismatch`](crate::ErrorCode::SeedMismatch).
+   */
+  async setMnemonic(
+    mnemonic: MnemonicLike,
+    asyncOpts_?: { signal: AbortSignal },
+  ): Promise<void> /*throws*/ {
+    return await uniffiRustCallAsync(
+      /*rustCaller:*/ uniffiCaller,
+      /*rustFutureFunc:*/ () => {
+        return nativeModule().uniffi_fedimint_sdk_fn_method_sdk_set_mnemonic(
+          uniffiTypeSdkObjectFactory.clonePointer(this),
+          FfiConverterTypeMnemonic.lower(
+            mnemonic,
+            nativeModule().rustbuffer_alloc,
+          ),
+        )
+      },
+      /*pollFunc:*/ nativeModule().ffi_fedimint_sdk_rust_future_poll_void,
+      /*cancelFunc:*/ nativeModule().ffi_fedimint_sdk_rust_future_cancel_void,
+      /*completeFunc:*/ nativeModule()
+        .ffi_fedimint_sdk_rust_future_complete_void,
+      /*freeFunc:*/ nativeModule().ffi_fedimint_sdk_rust_future_free_void,
+      /*liftFunc:*/ (_v) => {},
       /*liftString:*/ FfiConverterString.lift.bind(FfiConverterString),
       /*asyncOpts:*/ asyncOpts_,
       /*errorHandler:*/ FfiConverterTypeError__as_error.lift.bind(
@@ -17851,7 +17869,7 @@ function uniffiEnsureInitialized() {
   }
   if (
     nativeModule().uniffi_fedimint_sdk_checksum_func_create_fedimint_sdk() !==
-    48291
+    48491
   ) {
     throw new UniffiInternalError.ApiChecksumMismatch(
       'uniffi_fedimint_sdk_checksum_func_create_fedimint_sdk',
@@ -17863,14 +17881,6 @@ function uniffiEnsureInitialized() {
   ) {
     throw new UniffiInternalError.ApiChecksumMismatch(
       'uniffi_fedimint_sdk_checksum_func_default_discovery_relays',
-    )
-  }
-  if (
-    nativeModule().uniffi_fedimint_sdk_checksum_func_open_existing_fedimint_sdk() !==
-    50677
-  ) {
-    throw new UniffiInternalError.ApiChecksumMismatch(
-      'uniffi_fedimint_sdk_checksum_func_open_existing_fedimint_sdk',
     )
   }
   if (
@@ -18774,7 +18784,7 @@ function uniffiEnsureInitialized() {
   }
   if (
     nativeModule().uniffi_fedimint_sdk_checksum_method_sdk_export_mnemonic() !==
-    7225
+    59080
   ) {
     throw new UniffiInternalError.ApiChecksumMismatch(
       'uniffi_fedimint_sdk_checksum_method_sdk_export_mnemonic',
@@ -18820,7 +18830,15 @@ function uniffiEnsureInitialized() {
       'uniffi_fedimint_sdk_checksum_method_sdk_forget_federation',
     )
   }
-  if (nativeModule().uniffi_fedimint_sdk_checksum_method_sdk_join() !== 46680) {
+  if (
+    nativeModule().uniffi_fedimint_sdk_checksum_method_sdk_has_mnemonic() !==
+    21474
+  ) {
+    throw new UniffiInternalError.ApiChecksumMismatch(
+      'uniffi_fedimint_sdk_checksum_method_sdk_has_mnemonic',
+    )
+  }
+  if (nativeModule().uniffi_fedimint_sdk_checksum_method_sdk_join() !== 61603) {
     throw new UniffiInternalError.ApiChecksumMismatch(
       'uniffi_fedimint_sdk_checksum_method_sdk_join',
     )
@@ -18861,6 +18879,14 @@ function uniffiEnsureInitialized() {
   ) {
     throw new UniffiInternalError.ApiChecksumMismatch(
       'uniffi_fedimint_sdk_checksum_method_sdk_resume_recovery',
+    )
+  }
+  if (
+    nativeModule().uniffi_fedimint_sdk_checksum_method_sdk_set_mnemonic() !==
+    43334
+  ) {
+    throw new UniffiInternalError.ApiChecksumMismatch(
+      'uniffi_fedimint_sdk_checksum_method_sdk_set_mnemonic',
     )
   }
   if (

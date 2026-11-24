@@ -42,7 +42,7 @@ use crate::{Error, ErrorCode, ErrorDetails, Result};
 /// Both persistent constructors only name a location and validate that name locally: no
 /// directory or origin-private store is created, nothing is read or written, and no lock is
 /// taken. [`SdkBuilder::build`](crate::SdkBuilder::build) is what actually opens the location,
-/// creates it if needed, reads or establishes the seed, and reopens the instance's
+/// creates it if needed, loads or explicitly establishes the seed, and reopens the instance's
 /// federations; see that method for the exact order and the errors each step can produce.
 ///
 /// # Seed and storage lifecycle

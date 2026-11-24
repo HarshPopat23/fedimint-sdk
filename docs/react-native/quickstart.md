@@ -46,7 +46,7 @@ You will see `react-native` and `react-native-bindings` in `node_modules/@fedimi
 
 Replace `App.tsx` with this file. It does four things:
 
-1. `openWallet` opens the data folder once for the whole app. A second open of the same folder fails with `StorageInUse`. The first open of an empty folder creates the seed. [Share the session](./session.md) has the full detail.
+1. `openWallet` opens the data folder once for the whole app. A second open of the same folder fails with `StorageInUse`. An empty folder stays seedless until the example explicitly initializes it. [Share the session](./session.md) has the full detail.
 2. `connectTestnet` parses the invite code. Then it reconnects to the federation if this device holds it, or joins it on the first launch. [Join a federation](./join.md) has the full detail.
    `connectWallet` runs the open and the connect once. React can run an effect twice, and a second `join` would fail with `AlreadyJoined`.
 3. `useBalance` returns the balance in msat, as a `bigint`. It is `undefined` until the first value arrives. Then it stays current. [Show a balance](./balance.md) has the full detail.
@@ -86,6 +86,9 @@ function openWallet(): Promise<SdkSession> {
 /** Reconnect to Fedi Testnet if this device holds it. Join it on the first launch. */
 async function connectTestnet(session: SdkSession): Promise<FederationLike> {
   const { sdk } = session
+  if (!sdk.hasMnemonic()) {
+    await sdk.setMnemonic(session.Mnemonic.generate())
+  }
   const invite = InviteCode.parse(TESTNET_INVITE.trim())
   const id = invite.federationId()
   const stored = sdk.storedFederations().some((f) => f.id === id)

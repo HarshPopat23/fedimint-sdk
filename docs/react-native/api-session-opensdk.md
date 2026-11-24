@@ -15,14 +15,14 @@ Opens the SDK on a data directory and gives you a session.
 
 **Parameters**
 
-| Name               | Type       | Description                                                                                                         |
-| ------------------ | ---------- | ------------------------------------------------------------------------------------------------------------------- |
-| `options.dataDir`  | `string`   | The directory where the SDK keeps its data.                                                                         |
-| `options.mnemonic` | `string[]` | Optional. Seed `words` to establish. Omit it to use the stored seed, or to make a new seed over an empty directory. |
+| Name               | Type       | Description                                                                                      |
+| ------------------ | ---------- | ------------------------------------------------------------------------------------------------ |
+| `options.dataDir`  | `string`   | The directory where the SDK keeps its data.                                                      |
+| `options.mnemonic` | `string[]` | Optional. Seed `words` to establish. Omit it to load the stored seed or open a seedless session. |
 
 **Returns.** `SdkSession`. An open session. It holds `sdk`, `InviteCode.parse`, `Notes.parse`, `Mnemonic.fromWords`, `Mnemonic.generate` and `close()`.
 
-**Throws.** [`InvalidInput`](./errors.md#code-invalidinput), [`StorageInUse`](./errors.md#code-storageinuse), [`SeedMismatch`](./errors.md#code-seedmismatch), [`Entropy`](./errors.md#code-entropy), [`Storage`](./errors.md#code-storage), [`StorageOrphaned`](./errors.md#code-storageorphaned). InvalidInput means bad seed words. This call does not return UnsupportedFederation or FederationUnreachable.
+**Throws.** [`InvalidInput`](./errors.md#code-invalidinput), [`StorageInUse`](./errors.md#code-storageinuse), [`SeedMismatch`](./errors.md#code-seedmismatch), [`Storage`](./errors.md#code-storage), [`StorageOrphaned`](./errors.md#code-storageorphaned). InvalidInput means bad seed words. This call does not return UnsupportedFederation or FederationUnreachable.
 
 **Example**
 {#example}

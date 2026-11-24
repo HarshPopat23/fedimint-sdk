@@ -567,6 +567,9 @@ protected:
   jsi::Value cpp_uniffi_fedimint_sdk_fn_method_sdk_forget_federation(
       jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
       size_t count);
+  jsi::Value cpp_uniffi_fedimint_sdk_fn_method_sdk_has_mnemonic(
+      jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
+      size_t count);
   jsi::Value cpp_uniffi_fedimint_sdk_fn_method_sdk_join(
       jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
       size_t count);
@@ -574,6 +577,9 @@ protected:
       jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
       size_t count);
   jsi::Value cpp_uniffi_fedimint_sdk_fn_method_sdk_reopen_federation(
+      jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
+      size_t count);
+  jsi::Value cpp_uniffi_fedimint_sdk_fn_method_sdk_set_mnemonic(
       jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
       size_t count);
   jsi::Value cpp_uniffi_fedimint_sdk_fn_method_sdk_shutdown(
@@ -634,9 +640,6 @@ protected:
       jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
       size_t count);
   jsi::Value cpp_uniffi_fedimint_sdk_fn_func_default_discovery_relays(
-      jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
-      size_t count);
-  jsi::Value cpp_uniffi_fedimint_sdk_fn_func_open_existing_fedimint_sdk(
       jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
       size_t count);
   jsi::Value cpp_ffi_fedimint_sdk_rust_future_poll_u8(jsi::Runtime &rt,
@@ -791,9 +794,6 @@ protected:
       jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
       size_t count);
   jsi::Value cpp_uniffi_fedimint_sdk_checksum_func_default_discovery_relays(
-      jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
-      size_t count);
-  jsi::Value cpp_uniffi_fedimint_sdk_checksum_func_open_existing_fedimint_sdk(
       jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
       size_t count);
   jsi::Value cpp_uniffi_fedimint_sdk_checksum_method_ecash_quote(
@@ -1171,6 +1171,9 @@ protected:
   jsi::Value cpp_uniffi_fedimint_sdk_checksum_method_sdk_forget_federation(
       jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
       size_t count);
+  jsi::Value cpp_uniffi_fedimint_sdk_checksum_method_sdk_has_mnemonic(
+      jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
+      size_t count);
   jsi::Value cpp_uniffi_fedimint_sdk_checksum_method_sdk_join(
       jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
       size_t count);
@@ -1178,6 +1181,9 @@ protected:
       jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
       size_t count);
   jsi::Value cpp_uniffi_fedimint_sdk_checksum_method_sdk_reopen_federation(
+      jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
+      size_t count);
+  jsi::Value cpp_uniffi_fedimint_sdk_checksum_method_sdk_set_mnemonic(
       jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
       size_t count);
   jsi::Value cpp_uniffi_fedimint_sdk_checksum_method_sdk_shutdown(

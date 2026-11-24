@@ -18,6 +18,10 @@ import { openSdk, LnReceiveState_Tags } from '@fedimint/web-sdk'
 
 const session = await openSdk({ storage: 'my-wallet' })
 const invite = await session.InviteCode.parse(code)
+// After the user chooses to create a wallet:
+if (!(await session.sdk.hasMnemonic())) {
+  await session.sdk.setMnemonic(await session.Mnemonic.generate())
+}
 const federation = await session.sdk.join(invite)
 const { invoice, operation } = await (await federation.lightning())!.receive(
   100_000n,
@@ -70,10 +74,12 @@ the worker's entry point is exported as `@fedimint/web-sdk/worker`.
 
 ## Opening an existing wallet
 
-At startup, use `openSdk({ storage, createIfMissing: false })` to require a stored seed.
-If the SDK rejects with `SdkError` and `ErrorCode.WalletNotFound`, offer the user a choice
-to create or restore a wallet. Once they choose, use the default open mode and pass
-the mnemonic for restore.
+Opening with `openSdk({ storage })` loads an existing seed or leaves empty
+storage seedless. Use `sdk.hasMnemonic()` to decide whether to show wallet setup.
+Discovery, preview, and invite parsing also work before setup. When the user
+chooses Create or Restore, use `Mnemonic.generate()` or `Mnemonic.fromWords(words)`
+from the session, then call `sdk.setMnemonic(mnemonic)`. Await the setter before
+joining or recovering a federation. A different mnemonic cannot replace a stored seed.
 
 ## Recovering a wallet
 

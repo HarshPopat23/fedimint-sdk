@@ -4,7 +4,6 @@ import {
   Notes,
   Sdk,
   createFedimintSdk,
-  openExistingFedimintSdk,
   type MnemonicLike,
   type SdkLike,
 } from '@fedimint/react-native-bindings'
@@ -15,12 +14,10 @@ export interface OpenOptions {
   /** Directory the SDK keeps its data in; the app's documents directory is the usual choice. */
   dataDir: string
   /**
-   * Seed words to establish; omit to use the stored seed, or to generate one over an empty
-   * directory.
+   * Seed words to establish; omit to use the stored seed, or to open a seedless session over an
+   * empty directory.
    */
   mnemonic?: string[]
-  /** Set to false to require a stored seed. Empty storage then returns WalletNotFound. */
-  createIfMissing?: boolean
 }
 
 export interface SdkSession {
@@ -57,11 +54,7 @@ export async function openSdk(options: OpenOptions): Promise<SdkSession> {
     : undefined
   // Typed to the interface by the generated bindings; the object is the generated class, whose
   // teardown `close` needs.
-  const open =
-    options.createIfMissing === false
-      ? openExistingFedimintSdk
-      : createFedimintSdk
-  const sdk = (await open(options.dataDir, mnemonic)) as Sdk
+  const sdk = (await createFedimintSdk(options.dataDir, mnemonic)) as Sdk
   let teardown: Promise<void> | undefined
   return {
     sdk,

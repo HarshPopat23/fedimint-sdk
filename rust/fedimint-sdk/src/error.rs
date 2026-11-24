@@ -1412,8 +1412,7 @@ pub enum ErrorCode {
     /// The platform's secure random source was unavailable or failed, so no
     /// entropy could be drawn, as when
     /// [`Mnemonic::generate`](crate::Mnemonic::generate) creates a fresh seed,
-    /// directly or through [`SdkBuilder::build`](crate::SdkBuilder::build)
-    /// establishing one for empty storage.
+    /// before the caller initializes an empty wallet.
     ///
     /// This is the one failure a caller can do nothing about: there is no
     /// input to correct, no permission to grant, and no retry that reliably
@@ -1443,11 +1442,8 @@ pub enum ErrorCode {
     /// generally indicates a bug; `message` carries what diagnostic detail
     /// is available.
     Internal,
-    /// Storage is empty and the caller asked to open an existing wallet.
-    ///
-    /// The SDK did not establish a seed. The caller can let the user choose
-    /// whether to create a new wallet or restore one with a mnemonic.
-    WalletNotFound,
+    /// This operation requires a mnemonic, and the session has no seed yet.
+    MnemonicRequired,
 }
 
 /// Crate-wide result alias: every fallible call in this crate returns

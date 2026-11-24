@@ -12,10 +12,10 @@ Open the wallet once, and show the seed words only to their owner.
 
 The [installation guide](./installation.md) opened the wallet and counted its seed words. This page opens that call up. You will not add a feature here. You will learn two habits every later guide relies on: open the wallet once, and treat the seed words as the money. The third habit, reading a failure by its code, is on [the errors page](./errors.md).
 
-Everything hangs off one object. `openSdk` gives you a session. Its `sdk` is the wallet: one seed, and any number of federations joined with it. Each federation you join is a `FederationLike`, and money moves through its `ecash()` and `lightning()` methods. Amounts are always `bigint` millisatoshis.
+Everything hangs off one object. `openSdk` gives you a session. Its `sdk` is the wallet: an optional seed, and any number of federations joined with it. Each federation you join is a `FederationLike`, and money moves through its `ecash()` and `lightning()` methods. Amounts are always `bigint` millisatoshis.
 
 ```text no-check
-openSdk({ dataDir })                    one session, one seed
+openSdk({ dataDir })                    one session, with or without a seed
   sdk.exportMnemonic().words()          the words, for a backup screen
   sdk.preview(invite)                   what a federation is, before joining (Join a federation)
   sdk.join(invite)                      a federation (Join a federation)
@@ -92,7 +92,7 @@ Call `openWallet(dataDir)` from two screens. You will see both get the same sess
 
 ### 02 · Show the seed words to their owner, and nobody else <Badge type="info" text="JavaScript" /> {#step-02}
 
-[`sdk.exportMnemonic()`](./api-sdk-exportmnemonic.md) returns the seed at once, with no `await`, because the SDK holds it in memory. The result does not print itself. [`words()`](./api-values-mnemonic-words.md) is the separate step that gives you the words as strings. They are the whole wallet: anyone who reads them can restore it on another phone and spend everything in it.
+[`sdk.exportMnemonic()`](./api-sdk-exportmnemonic.md) returns the stored seed with no `await`. It throws `MnemonicRequired` if setup is incomplete. The result does not print itself. [`words()`](./api-values-mnemonic-words.md) is the separate step that gives you the words as strings. They are the whole wallet: anyone who reads them can restore it on another phone and spend everything in it.
 
 ```ts [backup-words.ts]
 import type { SdkSession } from '@fedimint/react-native'
@@ -105,6 +105,7 @@ import type { SdkSession } from '@fedimint/react-native'
  * the wallet already keeps the seed in its own folder.
  */
 export function wordsForBackupScreen(session: SdkSession): string[] {
+  if (!session.sdk.hasMnemonic()) return []
   return session.sdk.exportMnemonic().words()
 }
 ```

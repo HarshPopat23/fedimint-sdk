@@ -19,6 +19,10 @@ pub async fn build(data_dir: &str) -> Result<Sdk> {
         .storage(Storage::at(data_dir)?)
         .build()
         .await?;
+    if !sdk.has_mnemonic() {
+        sdk.set_mnemonic(&fedimint_sdk::Mnemonic::generate()?)
+            .await?;
+    }
     // An empty list of stored federations is the cheapest way to tell "this run just
     // generated a fresh seed" from "this run reopened a wallet that already existed": an
     // application backs up the mnemonic exactly once, the first time it is generated, and
