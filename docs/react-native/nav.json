@@ -171,6 +171,16 @@
               "description": "Starts a stored federation again, without an invite code."
             },
             {
+              "slug": "api-sdk-hasmnemonic",
+              "title": "hasMnemonic()",
+              "description": "Checks whether the session has a seed."
+            },
+            {
+              "slug": "api-sdk-setmnemonic",
+              "title": "setMnemonic()",
+              "description": "Initializes seedless storage with the chosen mnemonic."
+            },
+            {
               "slug": "api-sdk-exportmnemonic",
               "title": "exportMnemonic()",
               "description": "Gives the seed phrase object of the wallet."

@@ -35,33 +35,42 @@ function notify(): void {
   for (const listener of listeners) listener()
 }
 
-/** Whether a wallet exists on this device: the SDK seeds its data directory on first open. */
-export const walletExists = async (): Promise<boolean> => dir.exists
+// Checking storage must not initialize a wallet. Share this open with setup so
+// concurrent screens never contend for the same storage location.
+let loading: Promise<SdkSession> | undefined
 
-/** Opens the SDK once and shares the session; `mnemonic` restores a seed over a fresh directory. */
+function load(): Promise<SdkSession> {
+  loading ??= openSdk({ dataDir }).catch((error: unknown) => {
+    loading = undefined
+    throw error
+  })
+  return loading
+}
+
+/** A directory alone is not a wallet: interrupted setup can leave it seedless. */
+export async function walletExists(): Promise<boolean> {
+  return (await load()).sdk.hasMnemonic()
+}
+
+/** Opens an existing wallet, or initializes it with words chosen during onboarding. */
 export function open(mnemonic?: string[]): Promise<SdkSession> {
-  if (session) return Promise.resolve(session)
   if (!opening) {
-    opening = openSdk({ dataDir, mnemonic }).then(
-      async (opened) => {
-        try {
-          if (!opened.sdk.hasMnemonic()) {
-            await opened.sdk.setMnemonic(opened.Mnemonic.generate())
-          }
-        } catch (error) {
-          opening = undefined
-          await opened.close()
-          throw error
+    opening = load()
+      .then(async (opened) => {
+        if (mnemonic) {
+          await opened.sdk.setMnemonic(opened.Mnemonic.fromWords(mnemonic))
+        }
+        if (!opened.sdk.hasMnemonic()) {
+          throw new Error('Choose Create or Restore to set up this wallet first.')
         }
         session = opened
         notify()
         return opened
-      },
-      (error) => {
+      })
+      .catch((error: unknown) => {
         opening = undefined
         throw error
-      },
-    )
+      })
   }
   return opening
 }
@@ -70,11 +79,12 @@ export function open(mnemonic?: string[]): Promise<SdkSession> {
 export async function reset(): Promise<void> {
   // The session is dropped first, so a failing close still leaves the module without one, the
   // data still gets deleted and listeners still hear about it; the error surfaces afterwards.
-  const closing = session
+  const closing = loading
   session = undefined
   opening = undefined
+  loading = undefined
   try {
-    if (closing) await closing.close()
+    if (closing) await (await closing).close()
   } finally {
     if (dir.exists) dir.delete()
     notify()

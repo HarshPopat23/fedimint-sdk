@@ -10,7 +10,7 @@ Open the wallet once, and show the seed words only to their owner.
 
 <p class="cap-row"><Badge type="tip" text="no federation needed" /> <Badge type="tip" text="synchronous export" /> <Badge type="tip" text="12 words on a new wallet" /></p>
 
-The [installation guide](./installation.md) opened the wallet and counted its seed words. This page opens that call up. You will not add a feature here. You will learn two habits every later guide relies on: open the wallet once, and treat the seed words as the money. The third habit, reading a failure by its code, is on [the errors page](./errors.md).
+The [installation guide](./installation.md) opened the SDK. This page shows how to open it once, offer Create or Restore when it has no seed, and keep the seed words private. The third habit, reading a failure by its code, is on [the errors page](./errors.md).
 
 Everything hangs off one object. `openSdk` gives you a session. Its `sdk` is the wallet: an optional seed, and any number of federations joined with it. Each federation you join is a `FederationLike`, and money moves through its `ecash()` and `lightning()` methods. Amounts are always `bigint` millisatoshis.
 
@@ -90,6 +90,41 @@ In a React app [Share the session](./session.md) shows how to share the session 
 Call `openWallet(dataDir)` from two screens. You will see both get the same session, and no `StorageInUse`.
 :::
 
+### Set up a seedless session <Badge type="info" text="JavaScript" /> {#setup}
+
+After `openWallet(dataDir)`, check `session.sdk.hasMnemonic()`. If it is false, show a setup
+screen with **Create** and **Restore** choices. Discovery, preview and invite parsing still
+work before setup; exporting words, joining and recovering require a mnemonic.
+
+```ts [setup-wallet.ts]
+import type { SdkSession } from '@fedimint/react-native'
+
+type SetupChoice = { kind: 'create' } | { kind: 'restore'; words: string[] }
+
+/** Call only after the user chooses Create or submits their restore words. */
+export async function setupWallet(
+  session: SdkSession,
+  choice: SetupChoice,
+): Promise<string[] | undefined> {
+  const mnemonic =
+    choice.kind === 'create'
+      ? session.Mnemonic.generate()
+      : session.Mnemonic.fromWords(choice.words)
+  await session.sdk.setMnemonic(mnemonic)
+  // Show these words and ask the user to confirm their backup before joining.
+  return choice.kind === 'create'
+    ? session.sdk.exportMnemonic().words()
+    : undefined
+}
+```
+
+For Create, call `setupWallet(session, { kind: 'create' })`, display the returned words on the
+backup screen, and wait for confirmation before proceeding. For Restore, collect the user's
+words and call `setupWallet(session, { kind: 'restore', words })`, then follow
+[Restore, step 03](./restore.md#step-03) to recover their federations. Surface setup errors and
+stay on this screen if saving fails. `setMnemonic` refuses a different existing seed with
+`SeedMismatch`; never delete storage to work around that error.
+
 ### 02 · Show the seed words to their owner, and nobody else <Badge type="info" text="JavaScript" /> {#step-02}
 
 [`sdk.exportMnemonic()`](./api-sdk-exportmnemonic.md) returns the stored seed with no `await`. It throws `MnemonicRequired` if setup is incomplete. The result does not print itself. [`words()`](./api-values-mnemonic-words.md) is the separate step that gives you the words as strings. They are the whole wallet: anyone who reads them can restore it on another phone and spend everything in it.
@@ -104,11 +139,20 @@ import type { SdkSession } from '@fedimint/react-native'
  * do not send them to analytics or a crash reporter, and do not store them yourself:
  * the wallet already keeps the seed in its own folder.
  */
-export function wordsForBackupScreen(session: SdkSession): string[] {
-  if (!session.sdk.hasMnemonic()) return []
+export function wordsForBackupScreen(
+  session: SdkSession,
+  showSetup: () => void,
+): string[] | undefined {
+  if (!session.sdk.hasMnemonic()) {
+    showSetup()
+    return undefined
+  }
   return session.sdk.exportMnemonic().words()
 }
 ```
+
+If this returns `undefined`, navigate to [Create or Restore](#setup) and do not render the
+backup screen. Once setup succeeds, ask for the words again.
 
 Read the words before you call `close()`. After it, `sdk` is destroyed and every call on it throws, `exportMnemonic` too.
 

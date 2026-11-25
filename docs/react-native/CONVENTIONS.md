@@ -14,6 +14,12 @@ The reader is a human or an agent. Both follow it from start to end, with no hel
 
 ## The API (proved: the fixtures compile)
 
+Opening empty storage leaves it seedless. Check `sdk.hasMnemonic()` and offer Create or Restore
+when false. Create: `await sdk.setMnemonic(Mnemonic.generate())`, then show and confirm the
+backup words. Restore: `await sdk.setMnemonic(Mnemonic.fromWords(words))`, then recover the
+federations. Reuse the open session; never infer a seed from folder existence. Joining,
+recovering and exporting words before setup throw `MnemonicRequired`.
+
 | Task                | Call                                                                                                                                                         |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Open                | `const session = await openSdk({ dataDir, mnemonic? })`; `session.sdk`; `await session.close()`                                                              |

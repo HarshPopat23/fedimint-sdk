@@ -136,6 +136,11 @@ already have a seedless session open, call `await sdk.setMnemonic(Mnemonic.fromW
 that session. The example above supplies the mnemonic explicitly at open. Both paths refuse
 to replace a different seed already in storage.
 
+**Do not open the same folder twice.** Reuse the open session, or await its `close()` before
+opening again. Without a completed shutdown, any federation, operation or subscription from
+the first session can keep the store alive; an open in the same run fails with `StorageInUse`.
+:::
+
 ::: tip Check
 Open with the words, then call `session.sdk.exportMnemonic().words()`. You will see the same words, in the same order. Open with one word changed and you will see the `InvalidInput` message.
 :::

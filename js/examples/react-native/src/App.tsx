@@ -67,13 +67,13 @@ const useWallet = () => {
   useEffect(() => {
     let cancelled = false
     const load = async () => {
-      const exists = await walletExists()
-      if (cancelled) return
-      if (!exists) {
-        setState({ exists: false, joined: false })
-        return
-      }
       try {
+        const exists = await walletExists()
+        if (cancelled) return
+        if (!exists) {
+          setState({ exists: false, joined: false })
+          return
+        }
         await open()
         if (!cancelled) {
           setState({ exists: true, joined: federation() !== undefined })

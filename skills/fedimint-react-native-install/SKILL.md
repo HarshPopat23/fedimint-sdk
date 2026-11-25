@@ -60,8 +60,11 @@ the shell). If `rbenv install` says `definition not found`, run `brew upgrade ru
   `--repo-update` the first time: one pod comes from the CocoaPods trunk by version.
 - **Session.** Open the SDK once, in one module the app owns (Session page). Mount the first
   test screen inside the app's existing navigator, behind a debug or developer menu.
-- **Restore.** Offer restore before the first open. The first open of an empty folder creates
-  a seed, and the folder then refuses other words (`SeedMismatch`).
+- **Wallet setup.** Opening an empty folder leaves it seedless. Check `sdk.hasMnemonic()`;
+  if false, offer Create or Restore. Create: `await sdk.setMnemonic(Mnemonic.generate())`,
+  then show and confirm the backup words. Restore: `await sdk.setMnemonic(Mnemonic.fromWords(words))`,
+  then recover the federations. Reuse the open session. Never infer a wallet from folder existence.
+  A different existing seed is refused with `SeedMismatch`.
 - **Saved invites.** Do not save the invite for launch. On launch, reopen the federation from
   `sdk.storedFederations()` and `sdk.reopenFederation(id)` (`federationOnLaunch`). This also
   finds a federation that `recover` restored. The invite is only needed to join.

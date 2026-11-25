@@ -16360,6 +16360,13 @@ export interface SdkLike {
    *
    * Repeating the same mnemonic succeeds without writing again. A different
    * mnemonic is refused with [`SeedMismatch`](crate::ErrorCode::SeedMismatch).
+   *
+   * # Errors
+   *
+   * Returns [`SeedMismatch`](crate::ErrorCode::SeedMismatch) for a different existing seed,
+   * [`StorageOrphaned`](crate::ErrorCode::StorageOrphaned) for state without a usable seed,
+   * [`Storage`](crate::ErrorCode::Storage) if the backend fails, or
+   * [`FederationClosed`](crate::ErrorCode::FederationClosed) after shutdown.
    */
   setMnemonic(
     mnemonic: MnemonicLike,
@@ -17595,6 +17602,13 @@ export class Sdk extends UniffiAbstractObject implements SdkLike {
    *
    * Repeating the same mnemonic succeeds without writing again. A different
    * mnemonic is refused with [`SeedMismatch`](crate::ErrorCode::SeedMismatch).
+   *
+   * # Errors
+   *
+   * Returns [`SeedMismatch`](crate::ErrorCode::SeedMismatch) for a different existing seed,
+   * [`StorageOrphaned`](crate::ErrorCode::StorageOrphaned) for state without a usable seed,
+   * [`Storage`](crate::ErrorCode::Storage) if the backend fails, or
+   * [`FederationClosed`](crate::ErrorCode::FederationClosed) after shutdown.
    */
   async setMnemonic(
     mnemonic: MnemonicLike,

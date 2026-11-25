@@ -279,11 +279,11 @@ final class DemoModel: ObservableObject {
 
             // An empty directory stays seedless until this wallet action initializes it.
             let mnemonic = words.isEmpty ? nil : try Mnemonic.fromWords(words: words)
-            let origin: WalletOrigin =
-                !words.isEmpty ? .restored : (Self.hasStoredWallet() ? .reopened : .created)
             let dataDir = try Self.dataDirectory()
             let sdk = try await createFedimintSdk(dataDir: dataDir.path, mnemonic: mnemonic)
             guard !self.isSuperseded else { return "superseded by a newer open" }
+            let origin: WalletOrigin =
+                !words.isEmpty ? .restored : (sdk.hasMnemonic() ? .reopened : .created)
             if !sdk.hasMnemonic() { try await sdk.setMnemonic(mnemonic: Mnemonic.generate()) }
             self.sdk = sdk
             self.hasSdk = true

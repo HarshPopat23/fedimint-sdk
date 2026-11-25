@@ -41,7 +41,12 @@ Methods of SdkLike, the type of `session.sdk`.
 | [`SdkLike.federations`](./api-sdk-federations.md)             | `federations(): Array<FederationLike>`                                  |
 | [`SdkLike.storedFederations`](./api-sdk-storedfederations.md) | `storedFederations(): Array<FederationInfo>`                            |
 | [`SdkLike.reopenFederation`](./api-sdk-reopenfederation.md)   | `reopenFederation(id: FederationId): Promise<FederationLike>`           |
+| [`SdkLike.hasMnemonic`](./api-sdk-hasmnemonic.md)             | `hasMnemonic(): boolean`                                                |
+| [`SdkLike.setMnemonic`](./api-sdk-setmnemonic.md)             | `setMnemonic(mnemonic: MnemonicLike): Promise<void>`                    |
 | [`SdkLike.exportMnemonic`](./api-sdk-exportmnemonic.md)       | `exportMnemonic(): MnemonicLike`                                        |
+
+`exportMnemonic()` throws `MnemonicRequired` until setup succeeds. Check `hasMnemonic()`
+and offer Create or Restore through `setMnemonic()` first.
 
 ## Federation {#federation}
 

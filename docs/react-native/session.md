@@ -85,15 +85,25 @@ import type { SdkSession } from '@fedimint/react-native'
 import { open } from './fedimint'
 
 /** Put this near the top of your tree, once. */
-export function WalletRoot({ children }: { children: React.ReactNode }) {
+export function WalletRoot({
+  children,
+  renderSetup,
+}: {
+  children: React.ReactNode
+  renderSetup: (session: SdkSession, onReady: () => void) => React.ReactNode
+}) {
   const [session, setSession] = useState<SdkSession | undefined>(undefined)
   const [failed, setFailed] = useState<string | undefined>(undefined)
+  const [needsSetup, setNeedsSetup] = useState(false)
 
   useEffect(() => {
     let live = true
     open().then(
       (opened) => {
-        if (live) setSession(opened)
+        if (live) {
+          setNeedsSetup(!opened.sdk.hasMnemonic())
+          setSession(opened)
+        }
       },
       (err) => {
         if (live) setFailed(String(err))
@@ -107,9 +117,23 @@ export function WalletRoot({ children }: { children: React.ReactNode }) {
 
   if (failed) return <Text>Could not open the wallet: {failed}</Text>
   if (!session) return <Text>Opening the wallet...</Text>
+  if (needsSetup) {
+    return (
+      <>
+        {renderSetup(session, () => {
+          if (session.sdk.hasMnemonic()) setNeedsSetup(false)
+        })}
+      </>
+    )
+  }
   return <>{children}</>
 }
 ```
+
+Pass `renderSetup` your app's Create or Restore screen. Use the
+[setupWallet helper](./seed-words.md#setup) to save the selected mnemonic on this same
+session. Call `onReady` after saving succeeds and, for Create, after the user confirms their
+backup. A failed setup stays on that screen. Do not open another session for setup.
 
 Below `WalletRoot`, any code can call `current()` and get the open session. Code outside React, such as a background task, calls `await open()` and gets the same one.
 
@@ -118,7 +142,7 @@ Below `WalletRoot`, any code can call `current()` and get the open session. Code
 :::
 
 ::: tip Check
-Wrap your navigator in `WalletRoot`. You will see `Opening the wallet...` for a moment, then your first screen.
+Wrap your navigator in `WalletRoot`. You will see `Opening the wallet...` for a moment, then Create or Restore on a fresh install, or your first wallet screen when a seed already exists.
 :::
 
 ### 02 · Optional: hold the session in a context <Badge type="info" text="JavaScript" /> {#step-02}

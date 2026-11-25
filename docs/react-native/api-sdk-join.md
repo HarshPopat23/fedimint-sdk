@@ -21,7 +21,7 @@ Joins a `federation`.
 
 **Returns.** `FederationLike`. A handle to the joined `federation`. The `federation` is saved and running.
 
-**Throws.** [`AlreadyJoined`](./errors.md#code-alreadyjoined), [`FederationUnreachable`](./errors.md#code-federationunreachable), [`Timeout`](./errors.md#code-timeout), [`UnsupportedFederation`](./errors.md#code-unsupportedfederation), [`FederationClosed`](./errors.md#code-federationclosed), [`Storage`](./errors.md#code-storage). It also returns every error of preview.
+**Throws.** [`MnemonicRequired`](./errors.md#code-mnemonicrequired) before setup (no federation is joined). Otherwise: [`AlreadyJoined`](./errors.md#code-alreadyjoined), [`FederationUnreachable`](./errors.md#code-federationunreachable), [`Timeout`](./errors.md#code-timeout), [`UnsupportedFederation`](./errors.md#code-unsupportedfederation), [`FederationClosed`](./errors.md#code-federationclosed), [`Storage`](./errors.md#code-storage). It also returns every error of preview.
 
 **Example**
 {#example}

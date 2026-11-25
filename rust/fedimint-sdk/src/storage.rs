@@ -49,9 +49,9 @@ use crate::{Error, ErrorCode, ErrorDetails, Result};
 ///
 /// - A seed is written only when the backend holds no state of this SDK's at all: no seed, no
 ///   federation record, no client state, no operation log, no activity history. It is written
-///   durably before any federation-derived state exists. A failure to generate one fails the
-///   open with [`ErrorCode::Entropy`](crate::ErrorCode::Entropy), leaving the storage
-///   untouched.
+///   durably before any federation-derived state exists. Opening empty storage without a
+///   supplied mnemonic leaves it seedless. Initialize it explicitly with
+///   [`Sdk::set_mnemonic`](crate::Sdk::set_mnemonic); opening never generates a seed.
 /// - Storage that holds other state but no readable seed is refused rather than silently
 ///   given a fresh one:
 ///   [`ErrorCode::StorageOrphaned`](crate::ErrorCode::StorageOrphaned), with
@@ -279,7 +279,7 @@ impl Storage {
     /// contend for the single-opener lock with each other.
     ///
     /// Infallible: there is no location to validate. Because the backend always starts empty,
-    /// an instance built on it accepts a supplied mnemonic as-is, or generates one, and never
+    /// an instance built on it accepts a supplied mnemonic as-is, or stays seedless, and never
     /// produces [`ErrorCode::SeedMismatch`](crate::ErrorCode::SeedMismatch) or the
     /// orphaned-storage refusal described on [`Storage`].
     pub fn in_memory() -> Storage {

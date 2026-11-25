@@ -207,6 +207,13 @@ impl Sdk {
     ///
     /// Repeating the same mnemonic succeeds without writing again. A different
     /// mnemonic is refused with [`SeedMismatch`](crate::ErrorCode::SeedMismatch).
+    ///
+    /// # Errors
+    ///
+    /// Returns [`SeedMismatch`](crate::ErrorCode::SeedMismatch) for a different existing seed,
+    /// [`StorageOrphaned`](crate::ErrorCode::StorageOrphaned) for state without a usable seed,
+    /// [`Storage`](crate::ErrorCode::Storage) if the backend fails, or
+    /// [`FederationClosed`](crate::ErrorCode::FederationClosed) after shutdown.
     pub async fn set_mnemonic(&self, mnemonic: &Mnemonic) -> Result<()> {
         let _lifecycle = self.inner.lifecycle.lock().await;
         self.inner.alive()?;
