@@ -27,6 +27,7 @@ import {
   type OnchainQuoteLike,
 } from '@fedimint/react-native'
 import {
+  browse,
   current,
   errorMessage,
   federation,
@@ -408,7 +409,7 @@ const JoinFederation = ({
     setPreviewing(true)
     setJoinError('')
     try {
-      const session = await open()
+      const session = await browse()
       const invite = InviteCode.parse(code.trim())
       setPreview(await session.sdk.preview(invite))
     } catch (error) {

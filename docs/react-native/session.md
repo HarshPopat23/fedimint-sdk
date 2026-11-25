@@ -131,7 +131,7 @@ export function WalletRoot({
 ```
 
 Pass `renderSetup` your app's Create or Restore screen. Use the
-[setupWallet helper](./seed-words.md#setup) to save the selected mnemonic on this same
+[setupWallet helper](./seed-words.md#step-02) to save the selected mnemonic on this same
 session. Call `onReady` after saving succeeds and, for Create, after the user confirms their
 backup. A failed setup stays on that screen. Do not open another session for setup.
 

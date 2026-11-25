@@ -90,7 +90,7 @@ In a React app [Share the session](./session.md) shows how to share the session 
 Call `openWallet(dataDir)` from two screens. You will see both get the same session, and no `StorageInUse`.
 :::
 
-### Set up a seedless session <Badge type="info" text="JavaScript" /> {#setup}
+### 02 · Set up a seedless session <Badge type="info" text="JavaScript" /> {#step-02}
 
 After `openWallet(dataDir)`, check `session.sdk.hasMnemonic()`. If it is false, show a setup
 screen with **Create** and **Restore** choices. Discovery, preview and invite parsing still
@@ -125,7 +125,13 @@ words and call `setupWallet(session, { kind: 'restore', words })`, then follow
 stay on this screen if saving fails. `setMnemonic` refuses a different existing seed with
 `SeedMismatch`; never delete storage to work around that error.
 
-### 02 · Show the seed words to their owner, and nobody else <Badge type="info" text="JavaScript" /> {#step-02}
+::: tip Check
+Open a fresh folder. You will see Create or Restore, and `hasMnemonic()` will be false.
+After either choice saves successfully, it will be true. Create will show 12 backup words;
+Restore will keep the words you supplied. A later open will load the same seed.
+:::
+
+### 03 · Show the seed words to their owner, and nobody else <Badge type="info" text="JavaScript" /> {#step-03}
 
 [`sdk.exportMnemonic()`](./api-sdk-exportmnemonic.md) returns the stored seed with no `await`. It throws `MnemonicRequired` if setup is incomplete. The result does not print itself. [`words()`](./api-values-mnemonic-words.md) is the separate step that gives you the words as strings. They are the whole wallet: anyone who reads them can restore it on another phone and spend everything in it.
 
@@ -151,7 +157,7 @@ export function wordsForBackupScreen(
 }
 ```
 
-If this returns `undefined`, navigate to [Create or Restore](#setup) and do not render the
+If this returns `undefined`, navigate to [Create or Restore](#step-02) and do not render the
 backup screen. Once setup succeeds, ask for the words again.
 
 Read the words before you call `close()`. After it, `sdk` is destroyed and every call on it throws, `exportMnemonic` too.

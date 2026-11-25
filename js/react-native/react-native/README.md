@@ -116,7 +116,9 @@ import { Paths } from 'expo-file-system'
 // filesystem path for Rust.
 const dataDir = Paths.document.uri.replace(/^file:\/\//, '') + 'fedimint'
 
-const { sdk, InviteCode, close } = await openSdk({ dataDir })
+const { sdk, InviteCode, Mnemonic, close } = await openSdk({ dataDir })
+// After the user chooses to create a wallet:
+if (!sdk.hasMnemonic()) await sdk.setMnemonic(Mnemonic.generate())
 const federation = await sdk.join(InviteCode.parse(inviteCode))
 ```
 

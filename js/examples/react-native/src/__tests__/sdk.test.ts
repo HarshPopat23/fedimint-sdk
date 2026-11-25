@@ -12,6 +12,9 @@ const mocks = vi.hoisted(() => {
       seed = next
     }),
     exportMnemonic: vi.fn(() => ({ words: () => seed })),
+    preview: vi.fn(async (_invite: unknown) => ({
+      id: 'previewed-federation',
+    })),
     federations: () => [],
   }
   const Mnemonic = {
@@ -72,6 +75,38 @@ for (const [name, load] of [
       expect(mocks.sdk.setMnemonic).not.toHaveBeenCalled()
       expect(mocks.Mnemonic.generate).not.toHaveBeenCalled()
     })
+
+    if (name === 'React Native') {
+      it('previews before setup without creating a wallet', async () => {
+        const app = await import('../sdk')
+        const session = await app.browse()
+        const invite = {} as Parameters<typeof session.sdk.preview>[0]
+        expect(await session.sdk.preview(invite)).toEqual({
+          id: 'previewed-federation',
+        })
+        expect(mocks.sdk.preview).toHaveBeenCalledWith(invite)
+        expect(await app.walletExists()).toBe(false)
+        expect(app.current()).toBeUndefined()
+        expect(mocks.sdk.setMnemonic).not.toHaveBeenCalled()
+        expect(mocks.Mnemonic.generate).not.toHaveBeenCalled()
+        await expect(app.open()).rejects.toThrow('Choose Create or Restore')
+      })
+
+      it('shares the browsing session with concurrent checks and later wallet setup', async () => {
+        const app = await import('../sdk')
+        const [first, second] = await Promise.all([
+          app.browse(),
+          app.browse(),
+          app.walletExists(),
+        ])
+        const wallet = await app.open(mocks.words)
+        expect(first).toBe(second)
+        expect(wallet).toBe(first)
+        expect(mocks.openSdk).toHaveBeenCalledTimes(1)
+        expect(wallet.sdk.exportMnemonic().words()).toEqual(mocks.words)
+        expect(mocks.Mnemonic.generate).not.toHaveBeenCalled()
+      })
+    }
 
     it('refuses implicit creation when opening a seedless session', async () => {
       const app = await load()

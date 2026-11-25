@@ -31,4 +31,4 @@ const words = mnemonic.words() // [!code focus]
 console.log(words.length)
 ```
 
-**Used in.** [Seed words, step 02](./seed-words.md#step-02), [Restore, step 02](./restore.md#step-02), [Installation, step 06](./installation.md#step-06)
+**Used in.** [Seed words, step 03](./seed-words.md#step-03), [Restore, step 02](./restore.md#step-02), [Installation, step 06](./installation.md#step-06)

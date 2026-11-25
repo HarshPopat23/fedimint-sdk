@@ -94,7 +94,7 @@ With the Fedi Testnet code, you will see a name, a guardian count above zero, an
 ### 03 · Join, then reconnect on every launch <Badge type="info" text="JavaScript" /> {#step-03}
 
 Before joining, check `sdk.hasMnemonic()`. If false, route to
-[Create or Restore](./seed-words.md#setup), then return here after setup and backup confirmation.
+[Create or Restore](./seed-words.md#step-02), then return here after setup and backup confirmation.
 Previewing an invite is allowed before setup; joining without a seed throws `MnemonicRequired`.
 
 `sdk.join(invite)` returns the federation, open and ready. The invite is only needed for this first join. The wallet keeps the federation in its own folder, so your app does not need to save the invite.

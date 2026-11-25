@@ -34,4 +34,4 @@ if (!sdk.hasMnemonic()) {
 }
 ```
 
-**Used in.** [Seed words, setup](./seed-words.md#setup), [Share the session](./session.md#step-01)
+**Used in.** [Seed words, step 02](./seed-words.md#step-02), [Share the session](./session.md#step-01)

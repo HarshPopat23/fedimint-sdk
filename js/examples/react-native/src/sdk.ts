@@ -44,6 +44,9 @@ function load(): Promise<SdkSession> {
   return loading
 }
 
+/** The shared session, with or without a seed, for discovery, preview and invite parsing. */
+export const browse = (): Promise<SdkSession> => load()
+
 /** A directory alone is not a wallet: interrupted setup can leave it seedless. */
 export async function walletExists(): Promise<boolean> {
   return (await load()).sdk.hasMnemonic()
